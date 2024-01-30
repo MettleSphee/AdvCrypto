@@ -1,4 +1,4 @@
-from math import sqrt,gcd,factorial
+from math import sqrt,gcd,factorial,lcm
 import random
 
 def input_xy():
@@ -15,7 +15,7 @@ def input_xy():
     return list_xy
 
 def inputN():
- n = input("Introduceti un numar neprim n mai mare ca 11 (pentru atacurile Fermat/Pollard).\nDaca nu folositi asta, scrieti 697.\nn = ")
+ n = input("Introduceti un numar neprim n mai mare ca 11 (pentru atacurile RSA,Fermat/Pollard).\nDaca nu folositi asta, scrieti 697.\nn = ")
  #print(n)
  if n.isdigit():
   n = int(n)
@@ -33,7 +33,26 @@ def inputN():
 
 def main_menu(n):
         #print(f"n = {n}")
-        choice = input("1. Fermat\n2. Pollard(p-1)\n3. Pollard Rho\n4. Schimba valoarea lui n\n5. exit()\n6. Euclid (se introduc 2 numere)\n7. Calculeaza valoarea phi(n)\n8. Exponentiere rapida\n9. Shamir (2)\n10. Elgamal aditiv (public key -> secret key -> message)\n11. Elgamal multiplicativ (pub key -> sec key -> msg)\n>> ")
+        print('''====RSA Attacks====
+1. Fermat
+2. Pollard(p-1)
+3. Pollard Rho
+4. Afla m cu phi(n)
+5. Afla m cu lambda(n)
+6. Calculeaza valoarea phi(n)
+7. Schimba valoarea lui n
+
+======Other tools======
+8. Euclid (se introduc 2 numere)
+9. Exponentiere rapida
+10. Shamir (polinomiala grad 2, cu 3 perechi cunoscute)
+11. Elgamal aditiv (public key -> secret key -> message)
+12. Elgamal multiplicativ (pub key -> sec key -> msg)
+
+======IESIRE======
+13. exit()
+''')
+        choice = input(">>")
         match choice:
             case "1":
                 fermat_attack(n)
@@ -42,21 +61,25 @@ def main_menu(n):
             case "3":
                 print_Pollard_Rho(n)
             case "4":
-                main_menu(inputN())
+                RSA_Phi(n)
             case "5":
-                return
+                RSA_Lambda(n)
             case "6":
-                euclid(n)
-            case "7":
                 get_phi(n)
+            case "7":
+                main_menu(inputN())
             case "8":
-                rapid_exp(n)
+                euclid(n)
             case "9":
-                shamir_2(n)
+                rapid_exp(n)
             case "10":
-                additiveElgamal(n)
+                shamir_2(n)
             case "11":
+                additiveElgamal(n)
+            case "12":
                 multiplicativeElgamal(n)
+            case "13":
+                return
             case _:
                 print("Invalid option! Try again!")
                 main_menu(n)
@@ -410,5 +433,68 @@ def multiplicativeElgamal(nonUsedValue):
     print(f"In this case, the result should be:\nm = {c2} * {pow(c1,-x,n)} mod {n}")
     print(f"=> m = { (c2 * pow(c1,-x,n)) % n } mod {n}")
     main_menu(nonUsedValue)
+
+#These two are copies of former functions just because my programming right now is sloppy and I'd rather have it all done the way I can, I don't know if I'll fix it later or not
+def pr_init(n,x,is_set,c,c_set):
+    if is_set:
+        x = int(x+1)
+    else:
+        x = 2
+    if c_set:
+        c = int(c+1)
+    else:
+        c = 1
+    return [x,c]
+
+def p_rho(n,x,x_set,c,c_set):
+    def eff(x,c):
+        return int(x**2 + c)
+    values = pr_init(n,x,x_set,c,c_set)
+    step=0
+    x_init = values[0]
+    d = 1
+    x = values[0]
+    y = x
+    c = values[1]
+    while d==1:
+        x = eff(x,c)%n
+        y = eff(y,c)%n
+        y = eff(y,c)%n
+        d = gcd(n, abs(x-y)%n)
+    if d==n:
+        result = p_rho(n,x_init,True,c+1)
+    else:
+        result = d
+    return result # returns factor
+
+def RSA_Lambda(n):    
+    print(f"N = {n}")
+    e = int(input("public key e = "))
+    c = int(input("encrypted message c = "))
+    p = p_rho(n,0,False,0,False)
+    q = int(n/p)
+    print(f"Do the factorisation of N, obtain:\np = {p}, q = {q}")
+    L = lcm(p-1, q-1)
+    print(f"Obtain lambda(n) = lcm(p-1,q-1) (do the steps bro)\nlambda({n}) = {L}")
+    d = pow(e,-1,L)
+    print(f"Now do the extended euclid to find out: d = e^-1 mod lambda(n)\n=> d = {e}^-1 mod {L}\n=> d = {d}")
+    m = pow(c,d,n)
+    print(f"All that's left to do is to calculate m = c^d mod N\n=>m = {c}^{d} mod {n}\n(use exp. rapida)\n=>m = {m} mod {n}")    
+    main_menu(n)
+
+def RSA_Phi(n):
+    print(f"N = {n}")
+    e = int(input("public key e = "))
+    c = int(input("encrypted message c = "))
+    p = p_rho(n,0,False,0,False)
+    q = int(n/p)
+    print(f"Do the factorisation of N, obtain:\np = {p}, q = {q}")
+    phi = (p-1)*(q-1)
+    print(f"phi(n) = (p-1) * (q-1)\n=> phi({n}) = {p-1} * {q-1}\n=> phi({n}) = {phi}")
+    d = pow(e,-1,phi)
+    print(f"Now do the extended euclid to find out: d = e^-1 mod phi(n)\n=> d = {e}^-1 mod {phi}\n=> d = {d}")
+    m = pow(c,d,n)
+    print(f"All that's left to do is to calculate m = c^d mod N\n=>m = {c}^{d} mod {n}\n(use exp. rapida)\n=>m = {m} mod {n}")
+    main_menu(n)
 
 main_menu(inputN())
