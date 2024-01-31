@@ -340,10 +340,11 @@ def rapid_exp(nonUsedValue):
     printOutput = printOutput[:-2] + f"(mod {mod})"
     print(printOutput)
     printOutput = "= "
-    result = 0
+    result = 1
     for i in factors_list:
-        result = result + ((n**i)%mod)
-        printOutput = printOutput + f"{(n**i)%mod} + "
+        result = result * ((n**i))
+        printOutput = printOutput + f"{(n**i)%mod} * "
+        result = result % mod
     printOutput = printOutput[:-2] + f"(mod {mod})\n= {result%mod} (mod {mod})\n"
     print(printOutput)
 
@@ -375,6 +376,11 @@ def shamir_2(nonUsedValue):
     print(f"x1: s + {x1}a + {x1**2}b = {f_x1}")
     print(f"x2: s + {x2}a + {x2**2}b = {f_x2}")
     print(f"x3: s + {x3}a + {x3**2}b = {f_x3}\n")
+    failsafe = (1-x1)*(x1-(x1**2))*(x1**2 - 1)
+    if (failsafe != 0):
+        print(f"Delta = {failsafe} =/= 0;")
+    else:
+        print(f"Delta = {failsafe} = 0, sistemul nu are solutii?")
     print(f"Rezolva sistemul, cand ai a,b scrie-le:")
     shamir2_solve(x1,x2,x3,f_x1,f_x2,f_x3,t)
     main_menu(nonUsedValue)
@@ -414,15 +420,17 @@ def multiplicativeElgamal(nonUsedValue):
     c1= int(input("c1 = "))
     c2= int(input("c2 = "))
     
-    print("This program will use the first method, by finding the secret key x:\nFormula: (2^x) % p == h")
+    print("This program will use the first method, by finding the secret key x:\nFormula: (g^x) % p == h")
     Found = False
     i = 0
     while (Found == False):
         i = i + 1
-        x = 2**i % n
-        print(f"2^{i} = {x%n} (mod {n})")
+        x = g**i % n
+        print(f"{g}^{i} = {x%n} (mod {n})")
         if (x == h):
             Found = True
+        if (i == 50):
+            break
     x = i
     print(f"=> x = {x} (secret key)")
     print(f"The formula for m becomes: m = c2 * ( c1^(-x) )\n=> m = {c2} * ( {c1}^(-{x}) )")
